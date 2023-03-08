@@ -9,7 +9,7 @@
             "type": "PowerShell",
             "request": "launch",
             "script": "${file}",
-            "args": ["-TargetUserName \"cybr.admin.test\" -TargetAddress \"client03.cybr.com\" -TargetPlatform \"WinLooselyDevice\" -TargetSafe \"Domain Admins\" -CyberArkAPIObjectName \"epmlcd.pass\" -CyberArkAPIObjectSafe \"EPM API User\" -CyberArkPVWAHostname \"pam.cybr.com\" -CyberArkCCPHostname \"pam.cybr.com\" -CyberArkCCPPort 443 -CyberArkCCPServiceRoot \"AIMWebServiceIWA\" -CyberARkCCPAppId \"EPM LCD Onboarding\" -CyberArkCCPAuthOSUser"]
+            "args": ["-TargetUserName \"Administrator\" -TargetAddress \"client01.cybr.com\" -TargetPlatform \"WinLooselyDevice\""]
         }
     ]
 }

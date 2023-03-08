@@ -31,34 +31,31 @@ For existing account detection to avoid inadvertently onboarding duplicates:
 
     - List Accounts (in all safes that may possibly contain a duplicate)
 
+In the Global Variables region, you MUST set values to the variables within the CHANGE-ME section that are relevant 
+for your organization.  The CHANGE-ME variables are as follows:
+
+$CyberArkAPIObjectName   - The object name (e.g. "account name") of the CyberArk Vaulted password object for your PVWA API user
+$CyberArkAPIObjectSafe   - The CyberArk Safe that your PVWA API password object resides within
+$CyberArkPVWAHostname    - The CyberArk Password Vault Web Access (PVWA) Hostname
+$CyberArkCCPHostname     - The CyberArk Central Credential Provider (CCP) Hostname
+$CyberArkCCPPort         - The CyberArk CCP Port Number
+$CyberarkCCPServiceRoot  - The CyberArk CCP IIS Application (i.e. default is "AIMWebService") you wish to connect to
+$CyberarkCCPAppId        - The Application ID you are identifying as to the CyberArk CCP platform
+$CyberArkDefaultSafe     - The default CyberArk Safe for onboarding. This safe will be used if no target safe is provided, the target safe doesn't exist, or permission is denied to the API user
+$CyberArkCCPAuthOSUser   - Set $true [RECOMMENDED] to use OS User authentication (IWA/NEGOTIATE) to CyberArk CCP otherwise, set $false
+$IgnoreSSLCertErrors     - Set $true to ignore SSL Certificate Errors (i.e. CN/SAN mismatch, and self-signed errors) otherwise, set $false [RECOMMENDED]
+
 .EXAMPLE
 CyberArkLCDOnboarding.ps1 -TargetUserName "Administrator" `
                           -TargetAddress "winclient.cybr.com" `
                           -TargetPlatform "WinLooselyDevice" `
-                          -TargetSafe "EPM-Onboarding" `
-                          -DefaultSafe "SomeValue" `
-                          -CyberArkAPIObjectName "api_epm_onboarding.pass" `
-                          -CyberArkAPIObjectSafe "PVWA API Accounts" `
-                          -CyberArkPWVAHostname "pvwa.cybr.com" `
-                          -CyberArkCCPHostname "ccp.cybr.com" `
-                          -CyberArkCCPPort 443 `
-                          -CyberArkCCPServiceRoot "AIMWebServiceIWA" `
-                          -CyberArkCCPAppId "EPM Onboarding" `
-                          -CyberArkCCPAuthOSUser
+                          -TargetSafe "EPM-Onboarding"
 
 .INPUTS
 TargetUserName          - The UserName of the account being onboarded
 TargetAddress           - The FQDN/IP address of the endpoint that the account being onboarded resides
 TargetPlatform          - The CyberArk Platform under which to onboard the account
 TargetSafe              - The CyberArk Safe to onboard the account into
-CyberArkAPIObjectName   - The object name (e.g. "name") of the CyberArk Vaulted password object for your PVWA API user
-CyberArkAPIObjectSafe   - The CyberArk Safe that your PVWA API password object resides within
-CyberArkPVWAHostname    - The CyberArk Password Vault Web Access (PVWA) Hostname
-CyberArkCCPHostname     - The CyberArk Central Credential Provider (CCP) Hostname
-CyberArkCCPPort         - The CyberArk CCP Port Number
-CyberarkCCPServiceRoot  - The CyberArk CCP IIS Application (i.e. default is "AIMWebService") you wish to connect to
-CyberarkCCPAppId        - The Application ID you are identifying as to the CyberArk CCP platform
-CyberArkCCPAuthOSUser   - Whether or not you wish to use OS User authentication (IWA/NEGOTIATE) to CyberArk CCP
 
 .OUTPUTS
 None
@@ -68,13 +65,14 @@ AUTHOR:
 Craig Geneske
 
 VERSION HISTORY:
-1.0 2/9/2023 - Initial Release
+1.0 3/8/2023 - Initial Release
 
 DISCLAIMER:
 This solution is provided as-is - it is not supported by CyberArk nor an official CyberArk solution.
 #>
 
 ################################################### SCRIPT PARAMETERS ###################################################
+#region Script Parameters
 
 Param(
     [Parameter(Mandatory = $true)]
@@ -86,64 +84,31 @@ Param(
     [Parameter(Mandatory = $true)]
     [string]$TargetPlatform,
 
-    [Parameter(Mandatory = $true)]
-    [string]$TargetSafe,
-
-    [Parameter(Mandatory = $true)]
-    [string]$CyberArkAPIObjectName,
-
-    [Parameter(Mandatory = $true)]
-    [string]$CyberArkAPIObjectSafe,
-
-    [Parameter(Mandatory = $true)]
-    [string]$CyberArkPVWAHostname,
-
-    [Parameter(Mandatory = $true)]
-    [string]$CyberArkCCPHostname,
-
-    [Parameter(Mandatory = $true)]
-    [int]$CyberArkCCPPort,
-
-    [Parameter(Mandatory = $true)]
-    [string]$CyberArkCCPServiceRoot,
-
-    [Parameter(Mandatory = $true)]
-    [string]$CyberArkCCPAppId,
-
     [Parameter(Mandatory = $false)]
-    [switch]$CyberArkCCPAuthOSUser,
-
-    [Parameter(Mandatory = $false)]
-    [switch]$IgnoreSSLCertErrors
+    [string]$TargetSafe
 )
 
-#################################################### LOADING TYPES ######################################################
-
-#Used for URL safe encoding within System.Web.HttpUtility
-Add-Type -AssemblyName System.Web -ErrorAction Stop 
-
-#Used for ignoring SSL Certificate errors if so specified
-$TrustAllCertsClass = @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(
-        ServicePoint srvPoint, X509Certificate certificate,
-        WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
-"@
-try {
-    Add-Type $TrustAllCertsClass
-}
-catch {
-    #Do nothing - supresses output
-}
-
+#endregion
 
 ################################################### GLOBAL VARIABLES ####################################################
+#region Global Variables
 
+### BEGIN CHANGE-ME SECTION ###
+
+$CyberArkAPIObjectName = "epmlcd.pass"
+$CyberArkAPIObjectSafe = "EPM API User"
+$CyberArkPVWAHostname = "pam.cybr.com"
+$CyberArkCCPHostname = "ccp.cybr.com"     
+$CyberArkCCPPort = 443
+$CyberarkCCPServiceRoot = "AIMWebServiceIWA" 
+$CyberarkCCPAppId = "EPM LCD Onboarding"
+$CyberArkDefaultSafe = "EPM LCD Staging"
+$CyberArkCCPAuthOSUser = $true
+$IgnoreSSLCertErrors = $false
+
+### END CHANGE-ME SECTION ###
+
+$ExecGUID = [guid]::NewGuid()
 $PVWABaseURI = "https://$CyberArkPVWAHostname/PasswordVault/api"
 $PVWAAuthLogonUrl = $PVWABaseURI + "/auth/CyberArk/Logon"
 $PVWAAuthLogoffUrl = $PVWABaseURI + "/auth/Logoff"
@@ -153,7 +118,40 @@ $CCPGetCredentialUrl = "https://$($CyberArkCCPHostname):$CyberArkCCPPort/$CyberA
                         "&Object=$([System.Web.HttpUtility]::UrlEncode($CyberArkAPIObjectName))" + `
                         "&AppId=$([System.Web.HttpUtility]::UrlEncode($CyberArkCCPAppId))"
 
+#endregion
+
+#################################################### LOADING TYPES ######################################################
+#region Loading Types
+
+#Used for URL safe encoding within System.Web.HttpUtility
+Add-Type -AssemblyName System.Web -ErrorAction Stop 
+
+#Used for ignoring SSL Certificate errors if so specified in global variables - Technique to remain compatible with PowerShell version 5 and below
+if (!("CACertValidation" -as [type]) -and $IgnoreSSLCertErrors) {
+    Add-Type -TypeDefinition @"
+using System;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+
+public static class CACertValidation {
+    public static bool IgnoreSSLErrors(object sender,
+        X509Certificate certificate,
+        X509Chain chain,
+        SslPolicyErrors sslPolicyErrors) { return true; }
+
+    public static RemoteCertificateValidationCallback GetDelegate() {
+        return new RemoteCertificateValidationCallback(CACertValidation.IgnoreSSLErrors);
+    }
+}
+"@
+}
+
+#endregion
+
 ################################################# FUNCTION DECLARATIONS #################################################
+#region Funciton Declarations
+
 Function WriteLog {
     <#
     .SYNOPSIS
@@ -191,23 +189,28 @@ Function WriteLog {
 
     $eventColor = [System.Console]::ForegroundColor
     if ($Header) {
-
-        $eventString = @"
-########################################################################################
-#                                                                                      #
-#                         CyberArk EPM-LCD | Onboarding Utility                        #
-#                                                                                      #
-########################################################################################
+        if ([Environment]::UserInteractive) {
+            $eventString = @"
+###############################################################################################################################
+#                                                                                                                             #
+#                                            CyberArk EPM-LCD | Onboarding Utility                                            #
+#                                                                                                                             #
+###############################################################################################################################
 "@
-        $eventString += "`n`n-----------------------> BEGINNING SCRIPT @ $(Get-Date -Format "MM/dd/yyyy HH:mm:ss") <-----------------------`n"
+        }
+        else {
+            $eventString = ""
+        }
+
+        $eventString += "`n`n-----------------------> BEGINNING SCRIPT [$ExecGUID] @ $(Get-Date -Format "MM/dd/yyyy HH:mm:ss") <-----------------------`n"
         $eventColor = "Cyan"
     }
     elseif ($Footer) {
-        $eventString = "`n------------------------> ENDING SCRIPT @ $(Get-Date -Format "MM/dd/yyyy HH:mm:ss") <------------------------`n"
+        $eventString = "`n------------------------> ENDING SCRIPT [$ExecGUID] @ $(Get-Date -Format "MM/dd/yyyy HH:mm:ss") <------------------------`n"
         $eventColor = "Cyan"
     }
     else {
-        $eventString =  $(Get-Date -Format "MM/dd/yyyy HH:mm:ss") + " | [$Type] | " + $Message
+        $eventString =  $(Get-Date -Format "MM/dd/yyyy HH:mm:ss") + " | [$Type] | $ExecGUID | " + $Message
         switch ($Type){
             "WRN" { $eventColor = "Yellow"; Break }
             "ERR" { $eventColor = "Red"; Break }
@@ -315,12 +318,7 @@ Function RetrieveAPICredential {
        $methodArgs.Add("UseDefaultCredentials", $true)
     }
 
-    #Setting certificate policy has a lasting affect on all subsequent calls
-    if ($IgnoreSSLCertErrors){
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-    }
-
-    WriteLog -Type INF -Message "Attempting to retrieve the PVWA API credential from CCP @ [$CCPGetCredentialURL]..."
+    WriteLog -Type INF -Message "Attempting to retrieve the PVWA API credential from CCP..."
     try {
 
         $result = Invoke-RestMethod @methodArgs
@@ -357,7 +355,7 @@ Function AuthenticateToPVWA {
         concurrentSession = $true 
     } | ConvertTo-Json
     
-    WriteLog -Type INF -Message "Attempting to authenticate to PVWA API @ [$PVWAAuthLogonUrl]..."
+    WriteLog -Type INF -Message "Attempting to authenticate to PVWA API..."
     try {
         $result = Invoke-RestMethod -Method Post -Uri $PVWAAuthLogonUrl -Body $postBody -ContentType "application/json"
     }
@@ -378,7 +376,7 @@ Function CheckIfAccountExists {
         Checks for the existence of a matching account in the CyberArk Vault via API.
         If an existing account is found with a matching username and address, an exception is thrown.
     .PARAMETER SessionToken
-        Base64 encoded session token that was received from the PVWA Logon endpoint
+        Session token that was received from the PVWA Logon endpoint
     .EXAMPLE
         CheckIfAccountExists -SessionToken "YmNlODFhZjktNjdkMS00Yzg3LThiMDctMTAxOGMzNzU3ZWJkOzFFNj...."
     .NOTES
@@ -401,19 +399,19 @@ Function CheckIfAccountExists {
         $results = Invoke-RestMethod -Method Get -Uri $finalUrl -Headers @{ Authorization = $SessionToken } -ContentType "application/json"
     }
     catch {
-        ParseFailureResult -Component PVWA -ErrorRecord $_ -Message "Failed to get accounts via PVWA API"
+        ParseFailureResult -Component PVWA -ErrorRecord $_ -Message "Failed to get accounts via PVWA API, unable to check for [$TargetUsername@$TargetAddress]"
         throw
     }
     
     if ($results.count -gt 0) {
         foreach ($acct in $results.value) {
             if ($acct.userName -match "^$([Regex]::Escape($TargetUsername))$" -and $acct.address -match "^$([Regex]::Escape($TargetAddress))$") {
-                WriteLog -Type WRN -Message "Success, account already exists, skipping any further onboarding action"
+                WriteLog -Type WRN -Message "Success, account [$TargetUsername@$TargetAddress] already exists, skipping any further onboarding action"
                 throw
             }
         }
     }
-    WriteLog -Type INF -Message "Success, account does not exist, proceeding with onboarding action"
+    WriteLog -Type INF -Message "Success, account [$TargetUsername@$TargetAddress] does not exist, proceeding with onboarding action"
 }
 
 Function OnBoardAccountToVault {
@@ -425,7 +423,7 @@ Function OnBoardAccountToVault {
         queue the newly onboarded account for immediate CPM rotation, which will be actioned by the 
         EPM Agent on that endpoint upon next check-in interval.  If onboarding fails, an exception is thrown.
     .PARAMETER SessionToken
-        Base64 encoded session token that was received from the PVWA Logon endpoint
+        Session token that was received from the PVWA Logon endpoint
     .EXAMPLE
         OnBoardAccountToVault -SessionToken "YmNlODFhZjktNjdkMS00Yzg3LThiMDctMTAxOGMzNzU3ZWJkOzFFNj...."
     .NOTES
@@ -435,6 +433,7 @@ Function OnBoardAccountToVault {
             - $TargetAddress
             - $TargetPlatform
             - $TargetSafe
+            - $CyberArkDefaultSafe
 
         Author: Craig Geneske
     #>
@@ -443,21 +442,53 @@ Function OnBoardAccountToVault {
         [string]$SessionToken
     )
 
+    $finalSafe = ""
+
+    if ($TargetSafe) {
+        $finalSafe = $TargetSafe
+    }
+    else {
+        $finalSafe = $CyberArkDefaultSafe
+    }
+
     $postBody = @{
         userName = $TargetUserName
         address = $TargetAddress
         platformId = $TargetPlatform
-        safeName = $TargetSafe
+        safeName = $finalSafe
     } | ConvertTo-Json
 
-    WriteLog -Type INF -Message "Attempting to onboard account [$TargetUserName@$TargetAddress]"
+    WriteLog -Type INF -Message "Attempting to onboard account [$TargetUserName@$TargetAddress] to Target Safe [$finalSafe]"
     try {
         $result = Invoke-RestMethod -Method Post -Uri $PVWAAccountsUrl -Body $postBody -Headers @{ Authorization = $SessionToken } -ContentType "application/json"
-        WriteLog -Type INF -Message "Successfully onboarded the account - AccountId [$($result.Id)]"
+        WriteLog -Type INF -Message "Successfully onboarded the account [$TargetUserName@$TargetAddress] to Target Safe [$finalSafe] - AccountId [$($result.Id)]"
     }
     catch {
-        ParseFailureResult -Component PVWA -ErrorRecord $_ -Message "Failed to onboard the account"
-        throw
+        ParseFailureResult -Component PVWA -ErrorRecord $_ -Message "Failed to onboard the account [$TargetUserName@$TargetAddress] to Target Safe [$finalSafe]"
+        #PASWS031E - Safe Doesn't Exist
+        #ITATS955E - Permission Denied
+        #In either of these cases, we should attempt to onboard into the Default Safe defined in Global Variables, if it wasn't yet attempted
+        if (($_.ErrorDetails.Message -match "PASWS031E" -or $_.ErrorDetails.Message -match "ITATS955E") -and $finalSafe -ne $CyberArkDefaultSafe) {
+            WriteLog -Type INF -Message "Attempting to onboard account [$TargetUserName@$TargetAddress] to Default Safe [$CyberArkDefaultSafe]"
+            $postBody = @{
+                userName = $TargetUserName
+                address = $TargetAddress
+                platformId = $TargetPlatform
+                safeName = $CyberArkDefaultSafe
+            } | ConvertTo-Json
+            try {
+                $result = Invoke-RestMethod -Method Post -Uri $PVWAAccountsUrl -Body $postBody -Headers @{ Authorization = $SessionToken } -ContentType "application/json"
+                WriteLog -Type INF -Message "Successfully onboarded the account [$TargetUserName@$TargetAddress] to Default Safe [$CyberArkDefaultSafe] - AccountId [$($result.Id)]"
+                $Error.Clear()
+            }
+            catch {
+                ParseFailureResult -Component PVWA -ErrorRecord $_ -Message "Failed to onboard the account [$TargetUserName@$TargetAddress] to Default Safe [$CyberArkDefaultSafe]"
+                throw
+            }
+        }
+        else {
+            throw
+        } 
     }
 
     WriteLog -Type INF -Message "Attempting to queue an immediate password change via CPM..."
@@ -479,7 +510,7 @@ Function LogoffPVWA {
         Logoff from the CyberArk PVWA API, removing the Vault session.  This as an explicit step is 
         important for immediately freeing the session, when API concurrency is in effect
     .PARAMETER SessionToken
-        Base64 encoded session token that was received from the PVWA Logon endpoint
+        Session token that was received from the PVWA Logon endpoint
     .EXAMPLE
         LogoffPVWA -SessionToken "YmNlODFhZjktNjdkMS00Yzg3LThiMDctMTAxOGMzNzU3ZWJkOzFFNj...."
     .NOTES
@@ -520,6 +551,16 @@ Function Main{
     #Print Log/Console Header
     WriteLog -Header
 
+    if ($IgnoreSSLCertErrors) {
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = [CACertValidation]::GetDelegate()
+        WriteLog -Type WRN -Message "You have disabled SSL Certificate validation, this setting is NOT recommended!"
+    }
+    else {
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $null
+    }
+
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+
     try {
         $PVWASessionToken = AuthenticateToPVWA
         CheckIfAccountExists -SessionToken $PVWASessionToken
@@ -544,6 +585,8 @@ Function Main{
     #Print Log/Console Footer
     WriteLog -Footer
 }
+
+#endregion
 
 ################################################### SCRIPT ENTRY POINT ##################################################
 Main
