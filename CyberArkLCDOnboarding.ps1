@@ -361,10 +361,13 @@ Function AuthenticateToPVWA {
     }
     catch {
         ParseFailureResult -Component PVWA -ErrorRecord $_ -Message "Failed to authenticate to PVWA API"
+        $pvwaCred = $null
+        $postBody = $null
         throw
     } 
     WriteLog -Type INF -Message "Successfully authenticated to PVWA API"
     $pvwaCred = $null
+    $postBody = $null
     return $result
 }
 
