@@ -483,11 +483,14 @@ Function OnBoardAccountToVault {
             } | ConvertTo-Json
             try {
                 $result = Invoke-RestMethod -Method Post -Uri $PVWAAccountsUrl -Body $postBody -Headers @{ Authorization = $SessionToken } -ContentType "application/json"
-                WriteLog -Type INF -Message "Successfully onboarded the account [$TargetUserName@$TargetAddress] to Default Safe [$CyberArkDefaultSafe] - AccountId [$($result.Id)]"
+                WriteLog -Type INF `
+                         -Message "Successfully onboarded the account [$TargetUserName@$TargetAddress] to Default Safe [$CyberArkDefaultSafe] - AccountId [$($result.Id)]"
                 $Error.Clear()
             }
             catch {
-                ParseFailureResult -Component PVWA -ErrorRecord $_ -Message "Failed to onboard the account [$TargetUserName@$TargetAddress] to Default Safe [$CyberArkDefaultSafe]"
+                ParseFailureResult -Component PVWA `
+                                   -ErrorRecord $_ `
+                                   -Message "Failed to onboard the account [$TargetUserName@$TargetAddress] to Default Safe [$CyberArkDefaultSafe]"
                 throw
             }
         }
