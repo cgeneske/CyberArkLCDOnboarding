@@ -18,6 +18,7 @@ CyberArk least-privileges that are required for the PVWA API user...
 
 On safe(s) that are targeted for onboarding:
 
+    - List Accounts (for detecting duplicates)
     - Add Accounts
     - Update Account Properties
     - Update Account Content (only if an existing object would need to be undeleted as a part of the onboarding motion)
@@ -41,7 +42,8 @@ $CyberArkCCPHostname     - The CyberArk Central Credential Provider (CCP) Hostna
 $CyberArkCCPPort         - The CyberArk CCP Port Number
 $CyberarkCCPServiceRoot  - The CyberArk CCP IIS Application (i.e. default is "AIMWebService") you wish to connect to
 $CyberarkCCPAppId        - The Application ID you are identifying as to the CyberArk CCP platform
-$CyberArkDefaultSafe     - The default CyberArk Safe for onboarding. This safe will be used if no target safe is provided, the target safe doesn't exist, or permission is denied to the API user
+$CyberArkDefaultSafe     - The default CyberArk Safe for onboarding. This safe will be used if no target safe is provided, the target safe 
+                           doesn't exist, or permission is denied for the API user.
 $CyberArkCCPAuthOSUser   - Set $true [RECOMMENDED] to use OS User authentication (IWA/NEGOTIATE) to CyberArk CCP otherwise, set $false
 $IgnoreSSLCertErrors     - Set $true to ignore SSL Certificate Errors (i.e. CN/SAN mismatch, and self-signed errors) otherwise, set $false [RECOMMENDED]
 
@@ -577,7 +579,7 @@ Function Main{
             WriteLog -Type WRN -Message "Script execution is being interrupted, aborting"
         }
         else {
-            WriteLog -Type INF -Message "All primary actions have completed successfully"
+            WriteLog -Type INF -Message "All actions have completed successfully"
         }
         if ($PVWASessionToken) {
             LogoffPVWA -SessionToken $PVWASessionToken
